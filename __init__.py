@@ -1,0 +1,1 @@
+from generate_face_embeddings import generate_embeddings
