@@ -54,17 +54,17 @@ Ensure you have the following installed:
    ```
 
 ## Usage
-    1) Generate facial embeddings of users. The script **authenticate.py** is designed to automate the process of user facial embedding generation. To generate embeddings we need to pass the folder containing user images as arguments to the file.
+- Generate facial embeddings of users. The script **authenticate.py** is designed to automate the process of user facial embedding generation. To generate embeddings we need to pass the folder containing user images as arguments to the file.
 
     ` python authenticate.py --generate '<path to images>' `
 
     The script generates the embeddings into the same folder where the 'authenticate.py' is located.
 
-    2) Once the facial embeddings are generated run the same script without any arguments for multi-user authentication.
+- Once the facial embeddings are generated run the same script without any arguments for multi-user authentication.
     
         `python authenticate.py`  
-        
+
 ## Acknowledgments
-This project is inspired by the research paper: "UCDCN: A Nested Architecture Based on Central Difference Convolution for Face Anti-Spoofing" published in Complex & Intelligent Systems.
+This project is inspired by the research paper: ["UCDCN: A Nested Architecture Based on Central Difference Convolution for Face Anti-Spoofing"](https://link.springer.com/article/10.1007/s40747-024-01397-0).
 
 
