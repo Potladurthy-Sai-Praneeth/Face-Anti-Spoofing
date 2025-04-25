@@ -41,6 +41,7 @@ Ensure you have the following installed:
 - OpenCV
 - NumPy
 - Scikit-learn
+- face-recognition
 
 ### Installation Steps
 1. Clone the repository:
@@ -51,6 +52,13 @@ Ensure you have the following installed:
 2. Install dependencies:
    ```sh
    pip install -r requirements.txt
+   ```
+
+   In case of conda environments, uncomment the requirements file which has no version specifications.
+   ```sh
+   conda install -c conda-forge dlib face_recognition opencv 
+   pip install face_recognition_models
+   conda install --yes --file requirements.txt
    ```
 
 ## Usage
@@ -67,6 +75,10 @@ Ensure you have the following installed:
     ``` sh
     python authenticate.py
      ```
+
+## Video Demonstration
+The following video demonstrates the Anti-Spoofing framework in real time testing. This framework is beneficial when deployed in edge devices that don't have depth sensors. \
+[Video](https://drive.google.com/file/d/1BJ8hv_CCgaZ3ARhbSSmkFpqaS6Gb-Kl_/view?usp=sharing)
 
 ## Acknowledgments
 This project is inspired by the research paper: ["UCDCN: A Nested Architecture Based on Central Difference Convolution for Face Anti-Spoofing"](https://link.springer.com/article/10.1007/s40747-024-01397-0).
