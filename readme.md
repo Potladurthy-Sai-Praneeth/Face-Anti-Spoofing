@@ -21,8 +21,7 @@ The system generates 2D depth maps from RGB images only when a live person is de
 A classifier is trained on top of the depth map model for binary classification using two central difference convolutions. The depth map model and classifier are trained using variations of loss functions inspired by the referenced research paper.
 
 ### Face Recognition
-Once depth map generation is validated, a facial recognition system authenticates users. Since multiple users may share a vehicle, a multi-user authentication system is implemented.
-
+Once depth map generation is validated, a facial recognition system authenticates users. A multi-user authentication system is implemented.
 - User face embeddings are obtained using a One-Shot learning framework and stored.
 - After verifying liveliness, the captured frame is compared against saved embeddings for authentication.
 
