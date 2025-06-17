@@ -96,7 +96,7 @@ def main_worker(rank, world_size):
     ).to(rank) 
     
     img_size = (256,256)
-    batch_size = 32  #  This is per-GPU batch size**
+    batch_size = 40  #  This is per-GPU batch size**
 
     device = torch.device(f"cuda:{rank}")
 
