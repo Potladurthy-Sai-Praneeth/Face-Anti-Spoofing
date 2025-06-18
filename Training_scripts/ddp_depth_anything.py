@@ -381,7 +381,6 @@ def get_labels(inputs, label):
     mask = label.view(-1, 1, 1, 1) == 1
     return torch.where(mask, inputs, torch.zeros_like(inputs))
 
-
 # %%
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Distributed Depth Anything Fine-tuning')
