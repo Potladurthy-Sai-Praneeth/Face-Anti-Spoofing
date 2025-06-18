@@ -27,6 +27,7 @@ import multiprocessing
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
+import argparse
 
 # %%
 def setup_ddp(rank, world_size):
@@ -131,7 +132,7 @@ def collate_fn(batch):
   return images, labels, gt
 
 # %%
-def main_worker(rank, world_size):
+def main_worker(rank, world_size,train_path, val_path):
     """Main training function for each process"""
     # **NEW: Setup DDP**
     setup_ddp(rank, world_size)
@@ -149,7 +150,7 @@ def main_worker(rank, world_size):
 
     device = torch.device(f"cuda:{rank}")
 
-    train_dataset = CustomDataset("/kaggle/input/increased-liveliness-detection/train",img_size=img_size)
+    train_dataset = CustomDataset(train_path,img_size=img_size)
     train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
     train_loader = DataLoader(
         train_dataset,
@@ -161,7 +162,7 @@ def main_worker(rank, world_size):
         sampler=train_sampler  
     )
 
-    val_dataset = CustomDataset("/kaggle/input/increased-liveliness-detection/val",img_size=img_size)
+    val_dataset = CustomDataset(val_path,img_size=img_size)
     val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False)
     val_loader = DataLoader(
         val_dataset,
@@ -383,10 +384,17 @@ def get_labels(inputs, label):
 
 # %%
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Distributed Depth Anything Fine-tuning')
+    parser.add_argument('--train_path', type=str, required=True, help='Path to the training dataset')
+    parser.add_argument('--val_path', type=str, required=True, help='Path to the validation dataset')
+    args = parser.parse_args()
+    train_path = args.train_path
+    val_path = args.val_path
+
     world_size = torch.cuda.device_count() 
     print(f"Using {world_size} GPUs for training")
     
     if world_size > 1:
-        torch.multiprocessing.spawn(main_worker, args=(world_size,), nprocs=world_size, join=True)
+        torch.multiprocessing.spawn(main_worker, args=(world_size,train_path,val_path), nprocs=world_size, join=True)
     else:
-        main_worker(0, 1)
+        main_worker(0, 1,train_path,val_path)
