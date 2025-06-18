@@ -340,7 +340,7 @@ def customLoss(criterion,mse_criterion,predictions,labels,kernel_filter):
     contrast_pred = contrast_depth_conv(predictions,kernel_filter)
     contrast_label = contrast_depth_conv(labels,kernel_filter)
     contrast_loss = mse_criterion(contrast_pred, contrast_label)
-    return 0.3*smooth_loss + contrast_loss 
+    return (0.3*smooth_loss + contrast_loss) * 100
 
 # %%
 def plot_depth_maps(outputs, labels, binary):
