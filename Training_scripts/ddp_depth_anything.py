@@ -145,7 +145,7 @@ def main_worker(rank, world_size,train_path, val_path):
         K.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1, p=0.8)
     ).to(rank) 
     
-    img_size = (256,256)
+    img_size = (252,252)
     batch_size = 64  #  This is per-GPU batch size**
 
     device = torch.device(f"cuda:{rank}")
