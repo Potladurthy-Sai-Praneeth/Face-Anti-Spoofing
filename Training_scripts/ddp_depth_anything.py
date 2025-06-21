@@ -187,7 +187,7 @@ def main_worker(rank, world_size,train_path, val_path):
             optimizer.zero_grad()
             
             outputs, binary_outputs = model(inputs)        
-            loss = loss_fn(outputs, depth_maps, binary_outputs, binary_targets)
+            loss = loss_fn(outputs, depth_maps, binary_outputs, binary_targets)*100
             
             # Calculate classification accuracy
             batch_accuracy = calculate_classification_accuracy(binary_outputs, binary_targets)
