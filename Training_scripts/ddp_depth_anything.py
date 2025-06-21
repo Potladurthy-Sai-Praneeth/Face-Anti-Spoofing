@@ -200,16 +200,17 @@ def main_worker(rank, world_size,train_path, val_path):
         scheduler.step(avg_train_loss)  # Use average loss for scheduler
         train_loss.append(avg_train_loss)
         train_accuracy.append(avg_train_accuracy)
-        
-        print(f"Epoch {epoch+1}, Training Loss: {avg_train_loss:.4f}, "
-            f"Training Accuracy: {avg_train_accuracy:.4f}, LR: {optimizer.param_groups[0]['lr']:.2e}")
+
+        if rank==0:
+            print(f"Epoch {epoch+1}, Training Loss: {avg_train_loss:.4f} , Training Accuracy: {avg_train_accuracy:.4f}, LR: {optimizer.param_groups[0]['lr']:.2e}")
         
         # Plot with correct binary labels
         # plot_depth_maps(outputs, depth_maps, binary_targets)
         
         # Validation every 5 epochs
-        if (epoch + 1) % 5 == 0:        
-            torch.save(model.module.state_dict(), f"fine_tuning_depth_anything_epoch_{epoch}.pth")
+        if (epoch + 1) % 5 == 0:  
+            if rank==0:      
+                torch.save(model.module.state_dict(), f"fine_tuning_depth_anything_epoch_{epoch}.pth")
             model.eval()
             with torch.no_grad():
                 running_loss_test = 0.0
@@ -238,16 +239,17 @@ def main_worker(rank, world_size,train_path, val_path):
                 val_loss.append(avg_val_loss)
                 val_accuracy.append(avg_val_accuracy)
                 
-                print(f"Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {avg_val_accuracy:.4f}")
-                
-                # Plot with correct binary labels
-                # plot_depth_maps(outputs_test, depth_maps_test, binary_targets_test)
-                
-                # Save best model
-                if avg_val_loss < best_epoch_loss:
-                    best_epoch_loss = avg_val_loss
-                    torch.save(model.module.state_dict(), f"best_fine_tune_depth_anything_epoch_{epoch}.pth")
-                    print(f"New best model saved with validation loss: {best_epoch_loss:.4f}")
+                if rank==0:
+                    print(f"Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {avg_val_accuracy:.4f}")
+                    
+                    # Plot with correct binary labels
+                    # plot_depth_maps(outputs_test, depth_maps_test, binary_targets_test)
+                    
+                    # Save best model
+                    if avg_val_loss < best_epoch_loss:
+                        best_epoch_loss = avg_val_loss
+                        torch.save(model.module.state_dict(), f"best_fine_tune_depth_anything_epoch_{epoch}.pth")
+                        print(f"New best model saved with validation loss: {best_epoch_loss:.4f}")
     
     cleanup()
 
