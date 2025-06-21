@@ -160,11 +160,7 @@ def main_worker(rank, world_size,train_path, val_path):
     optimizer = optim.Adam(model.parameters(), lr=0.0001,weight_decay=0.0001)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3)
     num_epochs = 101
-    
-    train_loss = []
-    val_loss = []
-    best_epoch_loss = float('inf')
-
+   
     # Main training loop
     train_loss = []
     val_loss = []
@@ -188,10 +184,8 @@ def main_worker(rank, world_size,train_path, val_path):
             
             outputs, binary_outputs = model(inputs)        
             loss = loss_fn(outputs, depth_maps, binary_outputs, binary_targets)*100
-            
-            # Calculate classification accuracy
-            batch_accuracy = calculate_classification_accuracy(binary_outputs, binary_targets)
-            running_accuracy += batch_accuracy
+
+            running_accuracy += calculate_classification_accuracy(binary_outputs, binary_targets)
             
             loss.backward()
             optimizer.step()
@@ -215,7 +209,7 @@ def main_worker(rank, world_size,train_path, val_path):
         
         # Validation every 5 epochs
         if (epoch + 1) % 5 == 0:        
-            torch.save(model.module.state_dict(), "fine_tuning_depth_anything.pth")
+            torch.save(model.module.state_dict(), f"fine_tuning_depth_anything_epoch_{epoch}.pth")
             model.eval()
             with torch.no_grad():
                 running_loss_test = 0.0
@@ -244,8 +238,7 @@ def main_worker(rank, world_size,train_path, val_path):
                 val_loss.append(avg_val_loss)
                 val_accuracy.append(avg_val_accuracy)
                 
-                print(f"Validation Loss: {avg_val_loss:.4f}, "
-                    f"Validation Accuracy: {avg_val_accuracy:.4f}")
+                print(f"Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {avg_val_accuracy:.4f}")
                 
                 # Plot with correct binary labels
                 # plot_depth_maps(outputs_test, depth_maps_test, binary_targets_test)
@@ -253,7 +246,7 @@ def main_worker(rank, world_size,train_path, val_path):
                 # Save best model
                 if avg_val_loss < best_epoch_loss:
                     best_epoch_loss = avg_val_loss
-                    torch.save(model.module.state_dict(), "best_fine_tuning_depth_anything.pth")
+                    torch.save(model.module.state_dict(), f"best_fine_tune_depth_anything_epoch_{epoch}.pth")
                     print(f"New best model saved with validation loss: {best_epoch_loss:.4f}")
     
     cleanup()
@@ -288,9 +281,7 @@ class FineTuneDepthAnything(nn.Module):
                         
     def forward(self, inp):
         outputs = self.depth_anything(inp, output_hidden_states=True)
-        encoder_hidden_states = outputs.hidden_states[-1]
-        features = encoder_hidden_states[:,0,:]
-        binary_predictions = self.classifier(features)
+        binary_predictions = self.classifier(outputs.hidden_states[-1][:,0,:])
         return outputs.predicted_depth.unsqueeze(1), binary_predictions
 
 # %%
@@ -345,9 +336,7 @@ class FocalLoss(nn.Module):
             inputs = inputs.contiguous().view(-1,inputs.size(2))   # N,H*W,C => N*H*W,C
         target = target.view(-1,1)
 
-        logpt = F.log_softmax(inputs,dim=1)
-        logpt = logpt.gather(1,target)
-        logpt = logpt.view(-1)
+        logpt = F.log_softmax(inputs,dim=1).gather(1,target).view(-1)
         pt = logpt.data.exp()
 
         if self.alpha is not None:
