@@ -114,7 +114,7 @@ def main_worker(rank, world_size,train_path, val_path):
         
     geometric_augs = K.AugmentationSequential(
         K.RandomHorizontalFlip(p=0.4),
-        K.RandomAffine(degrees=20, translate=(0.1, 0.1), scale=scale_range),
+        K.RandomAffine(degrees=20, translate=(0.1, 0.1), scale=scale_range,align_corners=True),
         data_keys=['input', 'mask'],  
         same_on_batch=False         
     )
@@ -345,7 +345,7 @@ class FocalLoss(nn.Module):
             inputs = inputs.contiguous().view(-1,inputs.size(2))   # N,H*W,C => N*H*W,C
         target = target.view(-1,1)
 
-        logpt = F.log_softmax(inputs)
+        logpt = F.log_softmax(inputs,dim=1)
         logpt = logpt.gather(1,target)
         logpt = logpt.view(-1)
         pt = logpt.data.exp()
