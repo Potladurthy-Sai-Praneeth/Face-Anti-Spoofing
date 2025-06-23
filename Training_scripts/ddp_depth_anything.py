@@ -320,14 +320,15 @@ class ContrastDepthLoss(nn.Module):
         return self.criterion(self.contrast_depth_conv(out), self.contrast_depth_conv(label))
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=2, alpha=0.25, size_average=True):
+    def __init__(self, device,gamma=2, alpha=0.25, size_average=True):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.alpha = alpha
+        self.device = device
         if isinstance(alpha,(float,int)): 
-            self.alpha = torch.Tensor([alpha,1-alpha])
+            self.alpha = torch.Tensor([alpha,1-alpha],device=device)
         if isinstance(alpha,list): 
-            self.alpha = torch.Tensor(alpha)
+            self.alpha = torch.Tensor(alpha,device=device)
         self.size_average = size_average
 
     def forward(self, inputs, target):
@@ -361,7 +362,7 @@ class CustomLoss(nn.Module):
         self.lambda_depth = lambda_depth
         self.lambda_blank = lambda_blank
 
-        self.focal_loss = FocalLoss()
+        self.focal_loss = FocalLoss(self.device)
 
         self.depth_criterion = nn.SmoothL1Loss(reduction='mean')
         self.contrast_loss = ContrastDepthLoss(self.device, self.depth_criterion)
