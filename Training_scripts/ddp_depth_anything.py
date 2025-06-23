@@ -326,9 +326,9 @@ class FocalLoss(nn.Module):
         self.alpha = alpha
         self.device = device
         if isinstance(alpha,(float,int)): 
-            self.alpha = torch.Tensor([alpha,1-alpha],device=device)
+            self.alpha = torch.tensor([alpha,1-alpha],device=device)
         if isinstance(alpha,list): 
-            self.alpha = torch.Tensor(alpha,device=device)
+            self.alpha = torch.tensor(alpha,device=device)
         self.size_average = size_average
 
     def forward(self, inputs, target):
