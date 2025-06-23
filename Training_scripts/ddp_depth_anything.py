@@ -107,7 +107,6 @@ def collate_fn(batch):
 # %%
 def main_worker(rank, world_size,train_path, val_path):
     """Main training function for each process"""
-    # **NEW: Setup DDP**
     setup_ddp(rank, world_size)
     
     scale_range = (0.7, 1.1)
@@ -266,18 +265,18 @@ class FineTuneDepthAnything(nn.Module):
 
         self.hidden_state = self.depth_anything.backbone.encoder.layer[-1].mlp.fc2.out_features
         # self.hidden_state = 1024
-        self.ffd_dim = 1024
+        self.ffd_dim = 512
 
         self.classifier = nn.Sequential(
                                         nn.Linear(self.hidden_state, self.ffd_dim),
                                         nn.ReLU(),
                                         nn.Dropout(p=0.4),
-                                        nn.Linear(self.ffd_dim, self.ffd_dim),
-                                        nn.ReLU(),
-                                        nn.Dropout(p=0.3),
                                         nn.Linear(self.ffd_dim, self.ffd_dim//2),
                                         nn.ReLU(),
-                                        nn.Dropout(p=0.2),
+                                        nn.Dropout(p=0.3),
+                                        # nn.Linear(self.ffd_dim, self.ffd_dim//2),
+                                        # nn.ReLU(),
+                                        # nn.Dropout(p=0.2),
                                         nn.Linear(self.ffd_dim//2, 2)
                                         )
                         
@@ -332,27 +331,27 @@ class FocalLoss(nn.Module):
         self.size_average = size_average
 
     def forward(self, inputs, target):
-        if inputs.dim()>2:
-            inputs = inputs.view(inputs.size(0),inputs.size(1),-1)  # N,C,H,W => N,C,H*W
-            inputs = inputs.transpose(1,2)    # N,C,H*W => N,H*W,C
-            inputs = inputs.contiguous().view(-1,inputs.size(2))   # N,H*W,C => N*H*W,C
+        # if inputs.dim()>2:
+        #     inputs = inputs.view(inputs.size(0),inputs.size(1),-1)  # N,C,H,W => N,C,H*W
+        #     inputs = inputs.transpose(1,2)    # N,C,H*W => N,H*W,C
+        #     inputs = inputs.contiguous().view(-1,inputs.size(2))   # N,H*W,C => N*H*W,C
         target = target.view(-1,1)
 
         logpt = F.log_softmax(inputs,dim=1).gather(1,target).view(-1)
         pt = logpt.data.exp()
 
         if self.alpha is not None:
-            if self.alpha.type()!=inputs.data.type():
-                self.alpha = self.alpha.type_as(inputs.data)
+            # if self.alpha.type()!=inputs.data.type():
+            #     self.alpha = self.alpha.type_as(inputs.data)
             at = self.alpha.gather(0,target.data.view(-1))
             logpt = logpt * at
 
         loss = -1 * (1-pt)**self.gamma * logpt
         
-        if self.size_average: 
-            return loss.mean()
+        # if self.size_average: 
+        #     return loss.mean()
             
-        return loss.sum()
+        return loss.mean()
 
 class CustomLoss(nn.Module):
     def __init__(self, device, lambda_focal=2.0, lambda_depth=1.0, lambda_blank=1.0):
@@ -367,7 +366,7 @@ class CustomLoss(nn.Module):
         self.depth_criterion = nn.SmoothL1Loss(reduction='mean')
         self.contrast_loss = ContrastDepthLoss(self.device, self.depth_criterion)
 
-        self.blanking_criterion = nn.SmoothL1Loss(reduction='mean')
+        # self.blanking_criterion = nn.SmoothL1Loss(reduction='mean')
 
     def forward(self, pred_depth, gt_depth, pred_binary, gt_binary):
         focal_loss = self.focal_loss(pred_binary, gt_binary)
@@ -387,8 +386,8 @@ class CustomLoss(nn.Module):
         loss_blank = torch.tensor(0.0, device=self.device)
         if torch.any(spoof_mask):
             spoof_pred_depth = pred_depth[spoof_mask]
-            blank_target = torch.zeros_like(spoof_pred_depth)
-            loss_blank = self.blanking_criterion(spoof_pred_depth, blank_target)
+            blank_target = gt_depth[spoof_mask] #torch.zeros_like(spoof_pred_depth)
+            loss_blank = self.depth_criterion(spoof_pred_depth, blank_target)
 
         total_loss = (self.lambda_focal * focal_loss + 
                       self.lambda_depth * loss_depth + 
