@@ -258,14 +258,14 @@ class FineTuneDepthAnything(nn.Module):
         super(FineTuneDepthAnything, self).__init__()
         self.depth_anything = AutoModelForDepthEstimation.from_pretrained("depth-anything/Depth-Anything-V2-Small-hf")
         for name,param in self.depth_anything.named_parameters():
-            if 'head' in name or 'neck.fusion_stage.layers.2.residual_layer' in name or 'neck.fusion_stage.layers.3' in name:
+            if 'head' in name or  'neck.fusion_stage.layers.3' in name: # 'neck.fusion_stage.layers.2.residual_layer' in name or
                 param.requires_grad = True
             else:
                 param.requires_grad = False
 
         self.hidden_state = self.depth_anything.backbone.encoder.layer[-1].mlp.fc2.out_features
         # self.hidden_state = 1024
-        self.ffd_dim = 512
+        self.ffd_dim = 256
 
         self.classifier = nn.Sequential(
                                         nn.Linear(self.hidden_state, self.ffd_dim),
@@ -279,9 +279,10 @@ class FineTuneDepthAnything(nn.Module):
                                         # nn.Dropout(p=0.2),
                                         nn.Linear(self.ffd_dim//2, 2)
                                         )
+        self.depth_anything.config.output_hidden_states = True
                         
     def forward(self, inp):
-        outputs = self.depth_anything(inp, output_hidden_states=True)
+        outputs = self.depth_anything(inp)
         binary_predictions = self.classifier(outputs.hidden_states[-1][:,0,:])
         return outputs.predicted_depth.unsqueeze(1), binary_predictions
 
@@ -320,7 +321,7 @@ class ContrastDepthLoss(nn.Module):
         return self.criterion(self.contrast_depth_conv(out), self.contrast_depth_conv(label))
 
 class FocalLoss(nn.Module):
-    def __init__(self, device,gamma=2, alpha=0.25, size_average=True):
+    def __init__(self, device,gamma=2, alpha=0.3, size_average=True):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.alpha = alpha
@@ -355,7 +356,7 @@ class FocalLoss(nn.Module):
         return loss.mean()
 
 class CustomLoss(nn.Module):
-    def __init__(self, device, lambda_focal=2.0, lambda_depth=1.0, lambda_blank=1.0):
+    def __init__(self, device, lambda_focal=1.0, lambda_depth=1.0, lambda_blank=1.0):
         super(CustomLoss, self).__init__()
         self.device = device
         self.lambda_focal = lambda_focal
