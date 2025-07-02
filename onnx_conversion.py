@@ -8,10 +8,9 @@ from depth_map_model import FineTuneDepthAnything
 from classifier import DepthClassifier
 import torch
 from config import CONFIG
-import multiprocesssing
+import multiprocessing
 from dataloader import CustomDataset, collate_fn
 from torch.utils.data import DataLoader, DistributedSampler
-import multiprocessing
 from anti_spoofing import AntiSpoofing
 
 
