@@ -156,11 +156,10 @@ class AuthenticateUser():
             if ret:
                 
                 depth_map, prediction, frame_rgb = self.get_spoof_prediction(frame)
-                
                 # Display the resulting frame
                 # cv2.imshow('Live Camera Feed', frame_rgb)
                 # Display the depth map
-                # cv2.imshow('Depth Map', depth_map)
+                # cv2.imshow('Depth Map', cv2.applyColorMap(depth_map.squeeze(0).squeeze(0).astype('uint8'), cv2.COLORMAP_JET))
 
                 if prediction == 1:
                     # If the prediction is real, proceed with face recognition
