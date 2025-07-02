@@ -4,7 +4,6 @@ import onnxruntime
 from onnxruntime.quantization import quantize_dynamic, quantize_static, QuantType, QuantFormat, create_calibrator, CalibrationMethod, CalibrationDataReader
 import os
 import numpy as np
-from anti-spoofing import AntiSpoofing
 from depth_map_model import FineTuneDepthAnything
 from classifier import DepthClassifier
 import torch
