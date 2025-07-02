@@ -60,6 +60,26 @@ Ensure you have the following installed:
    conda install --yes --file requirements.txt
    ```
 
+## Training the Model
+To train the anti-spoofing model, run the training script with the appropriate dataset path. The script will handle the training process, including depth map generation and classifier training.
+
+```sh
+python train_dpth_map.py --train_path "<path to training dataset>" --val_path "<path to validation dataset>"
+```
+
+```sh
+python train_classifier.py --train_path "<path to training dataset>" --val_path "<path to validation dataset>"
+```
+
+## Model Quantization
+To quantize the trained models for deployment on edge devices, use the following command:
+
+```sh
+python onnx_conversion.py --depth_model_path "<path to the trained depth model>"  --classifier_path "<Path to the classifier>" --val_path "<path to validation dataset>"
+```
+
+
+
 ## Usage
 - Generate facial embeddings of users. The script **authenticate.py** is designed to automate the process of user facial embedding generation. To generate embeddings we need to pass the folder containing user images as arguments to the file.
 
