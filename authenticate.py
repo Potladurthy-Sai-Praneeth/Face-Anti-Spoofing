@@ -54,20 +54,11 @@ class AuthenticateUser():
         print('Finished loading face embeddings and it took {} seconds'.format(time.time()-start))
 
         # Load models
-        # self.depth_model_name = 'depth_map_model.onnx'
-        # self.classifier_model_name = 'classifier_model.onnx'
-
-        self.depth_model_name = 'depth_quantized_model.onnx'
-        self.classifier_model_name = 'classifier_quantized_model.onnx'
+        self.depth_model_name = 'anti_spoofing_quantized.onnx'
 
         start = time.time()
         onnx.checker.check_model(onnx.load(os.path.join(self.models_folder,self.depth_model_name)))
         self.depth_map_model = self.create_inference_session(os.path.join(self.models_folder,self.depth_model_name))
-        # Raises an error if the model is not valid
-        
-        onnx.checker.check_model(onnx.load(os.path.join(self.models_folder,self.classifier_model_name)))
-        self.classifier_model = self.create_inference_session(os.path.join(self.models_folder,self.classifier_model_name))
-
         print('Finished loading models and it took {} seconds'.format(time.time()-start))
 
         # Initialize the camera
@@ -94,7 +85,7 @@ class AuthenticateUser():
         session = onnxruntime.InferenceSession(
             quantized_model_path,
             options,
-            providers=[provider]
+            providers=[provider] # ['CUDAExecutionProvider', 'CPUExecutionProvider']
         )
         return session
     
@@ -111,6 +102,49 @@ class AuthenticateUser():
         image = np.expand_dims(image, axis=0)   
         
         return image
+
+    def get_spoof_prediction(self, frame):
+        '''
+        This function takes a frame as input and returns the prediction of the anti-spoofing model.
+        Args:
+            frame : numpy array
+                The frame to be processed.
+        Returns:
+            prediction : int
+                The prediction of the anti-spoofing model.
+        '''
+        # Convert the frame from BGR to RGB
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Preprocess the frame as a tensor for the classifier
+        preprocessed_frame = self.preprocess_image(frame_rgb)
+
+        depth_input = {self.depth_map_model.get_inputs()[0].name: preprocessed_frame}
+        depth_map,output = self.depth_map_model.run(None, depth_input)
+        
+        prediction = np.argmax(output, axis=1)[0]
+        
+        return depth_map,prediction,frame_rgb
+    
+    def get_user_name(self,frame_rgb):
+        '''
+        This function takes a frame as input and returns the name of the user if authenticated.
+        Args:
+            frame_rgb : numpy array
+                The frame to be processed.
+        Returns:
+            name : str
+                The name of the user if authenticated, else None.
+        '''
+        face_locations = face_recognition.face_locations(frame_rgb)
+        face_encodings = face_recognition.face_encodings(frame_rgb, face_locations)
+        
+        for face_encoding in face_encodings:
+            results = face_recognition.compare_faces(self.known_faces, face_encoding, tolerance=0.5)
+            for i in range(len(results)):
+                if results[i]:
+                    return self.known_names[i]
+        return None
     
     def authenticate(self):
         '''
@@ -120,67 +154,29 @@ class AuthenticateUser():
             start_time = time.time()
             ret, frame = self.video_capture.read()
             if ret:
-                # Find all the faces in the frame
-                face_locations = face_recognition.face_locations(frame)
-                face_encodings = face_recognition.face_encodings(frame, face_locations)
-                # Convert the frame from BGR to RGB
-                for face_encoding in face_encodings:
-                    # Convert the frame from BGR to RGB
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                
+                depth_map, prediction, frame_rgb = self.get_spoof_prediction(frame)
+                
+                # Display the resulting frame
+                # cv2.imshow('Live Camera Feed', frame_rgb)
+                # Display the depth map
+                # cv2.imshow('Depth Map', depth_map)
 
-                    # Preprocess the frame as a tensor for the classifier
-                    preprocessed_frame = self.preprocess_image(frame_rgb)
+                if prediction == 1:
+                    # If the prediction is real, proceed with face recognition
+                    print('Live User, Proceeding for face recognition')
 
-                    # Make predictions on the preprocessed frame
-                    depth_input = {self.depth_map_model.get_inputs()[0].name: preprocessed_frame}
-                    
-                    depth_map = self.depth_map_model.run(None, depth_input)[0]
-
-                    classifier_input={self.classifier_model.get_inputs()[0].name: depth_map}
-                    
-                    output = self.classifier_model.run(None,classifier_input)[0]
-
-                    
-                    # Get the prediction
-                    prediction = np.argmax(output, axis=1)[0]
-                    print(f"Predicted is {prediction} class: {'Real' if prediction == 1 else 'Spoof'}")
-
-                    depth_map_display = cv2.applyColorMap(depth_map[0,0,:,:].astype('uint8'), cv2.COLORMAP_JET)
-
-                    # Display the resulting frame
-                    # cv2.imshow('Live Camera Feed', frame)
-                    # Display the depth map
-                    # cv2.imshow('Depth Map', depth_map_display)
-
-                    if prediction == 1:
-                        # If the prediction is real, proceed with face recognition
-                        print('Live User, Proceeding for face recognition')
-
-                        # Compare the faces with the known faces
-                        results = face_recognition.compare_faces(self.known_faces, face_encoding, tolerance=0.5) # 0.515 works well
-                        get_name=None
-                        for i in range(len(results)):
-                            if results[i]:
-                                get_name = self.known_names[i]
-                                if get_name is not None:
-                                    self.is_authenticated = True
-                                    break
-                                else:
-                                    self.is_authenticated = False           
-                        if self.is_authenticated:
-                            print(f'Authenticated as {get_name}')
-                            # Perform any necessary operations here #
-                            # # # # # # # # # # # # # # # # # # # # #
-                            # For now, we will just print the name #
-
-                            # Add a delay to prevent multiple authentications and reset the authentication
-                            self.is_authenticated = False           
-                        else:
-                            print(f'Person is not a registered user')
-                            self.is_authenticated = False
+                    # Find all the faces in the frame
+                    auth = self.get_user_name(frame_rgb)
+                    if auth is not None:
+                        print(f'✅ User {auth} authenticated successfully')
+                        self.is_authenticated = True
                     else:
-                        print('Spoof detected')
-                        self.is_authenticated = False
+                        print('❌ User not recognized, please try again')
+                        self.is_authenticated = False 
+                else:
+                    print('Spoof detected')
+                    self.is_authenticated = False
                 end_time = time.time()
                 print(f'Time taken for inference is {end_time-start_time}')
                 start_time = end_time
@@ -188,8 +184,6 @@ class AuthenticateUser():
                 break
         self.video_capture.release()
         cv2.destroyAllWindows()
-
-
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -205,4 +199,3 @@ if __name__ == "__main__":
             auth.authenticate()    
         else:
             raise FileNotFoundError('The face embeddings are not found. Please generate the embeddings first.')
-        

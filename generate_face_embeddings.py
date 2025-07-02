@@ -2,11 +2,6 @@ import os
 import numpy as np
 import face_recognition
 
-
-# images_folder = 'images'
-# encoding_path='only_faces'
-
-
 def generate_embeddings(images_folder, encoding_path='face_embeddings'):
     '''
     This function generates embeddings for the images in the images folder.

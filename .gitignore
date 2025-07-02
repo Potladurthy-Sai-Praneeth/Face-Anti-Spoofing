@@ -3,3 +3,5 @@ face_embeddings/
 __pycache__/
 *.pth
 *.pt
+*.ipynb
+*.json
