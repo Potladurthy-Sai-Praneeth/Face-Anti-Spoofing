@@ -116,7 +116,7 @@ if __name__ == "__main__":
     val_dataset = CustomDataset(args.val_path,img_size=CONFIG['img_size'])
     val_loader = DataLoader(
         val_dataset,
-        batch_size=CONFIG['batch_size'],
+        batch_size=32,
         shuffle=True, 
         num_workers=multiprocessing.cpu_count(), 
         pin_memory=True,
