@@ -83,7 +83,7 @@ def quantize_onnx_model(onnx_model_path,dataloader,device,filename='quanztied_de
 def create_inference_session(quantized_model_path):
     """Create ONNX Runtime inference session"""
     options = onnxruntime.SessionOptions()
-    options.intra_op_num_threads = multiprocesssing.cpu_count()
+    options.intra_op_num_threads = multiprocessing.cpu_count()
     options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
     
     # Create inference session
