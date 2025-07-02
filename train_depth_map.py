@@ -105,7 +105,6 @@ def main_worker(rank, world_size,train_path, val_path):
         train_sampler.set_epoch(epoch)  
         model.train()
         running_loss = 0.0
-        running_accuracy = 0.0
         num_batches = 0
 
         # Fixed approach curriculum learning

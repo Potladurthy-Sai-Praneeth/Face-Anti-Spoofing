@@ -91,6 +91,7 @@ def main_worker(rank, world_size,train_path, val_path,model_path):
     depth_model.load_state_dict(torch.load(model_path, map_location=device))
     depth_model = torch.compile(depth_model)
     depth_model = DDP(depth_model, device_ids=[rank], output_device=rank)
+    depth_model.eval()
 
 
     model = DepthClassifier(img_size=CONFIG['img_size']).to(device)
