@@ -41,6 +41,7 @@ sympy==1.13.2
 tokenizers==0.19.1
 typing_extensions==4.12.2
 urllib3==2.2.2
+kornia==0.7.3
 
 
 
